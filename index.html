@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DRACULA GAMES</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
+
+body{
+  margin:0;
+  background:#09090d;
+  color:white;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+
+header{
+  text-align:center;
+  padding:25px 15px 15px;
+  background:#09090d;
+}
+
+.logo{
+  color:#e53935;
+  font-size:28px;
+  font-weight:900;
+  letter-spacing:2px;
+}
+
+.subtitle{
+  color:#999;
+  font-size:13px;
+  margin-top:5px;
+}
+
+main{
+  max-width:520px;
+  margin:auto;
+  padding:15px;
+}
+
+.hero{
+  background:linear-gradient(145deg,#19131c,#100d12);
+  border:1px solid #29212b;
+  border-radius:24px;
+  padding:22px;
+  margin-bottom:18px;
+}
+
+.hero h1{
+  margin:0 0 8px;
+  font-size:25px;
+}
+
+.hero p{
+  color:#bbb;
+  line-height:1.6;
+}
+
+button{
+  border:0;
+  border-radius:15px;
+  padding:14px;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.play{
+  width:100%;
+  background:#e53935;
+  color:white;
+}
+
+.card{
+  background:#131319;
+  border:1px solid #25252e;
+  border-radius:20px;
+  padding:16px;
+}
+
+.card h2{
+  margin:0 0 5px;
+}
+
+.muted{
+  color:#92929c;
+  font-size:13px;
+}
+
+#game{
+  display:none;
+  margin-top:15px;
+  text-align:center;
+}
+
+canvas{
+  width:100%;
+  max-width:420px;
+  aspect-ratio:1;
+  border-radius:20px;
+  background:#111;
+}
+
+.stats{
+  display:flex;
+  justify-content:space-between;
+  color:#bbb;
+  margin:10px 2px;
+  font-weight:bold;
+}
+
+.controls{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  max-width:280px;
+  margin:12px auto;
+}
+
+.controls button{
+  background:#24242d;
+  color:white;
+  height:55px;
+}
+
+.empty{
+  visibility:hidden;
+}
+
+.back{
+  width:100%;
+  background:#24242d;
+  color:white;
+}
+
+footer{
+  text-align:center;
+  color:#666;
+  font-size:12px;
+  padding:20px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">🧛 DRACULA GAMES</div>
+  <div class="subtitle">ألعاب خفيفة • مصممة للآيفون</div>
+</header>
+
+<main>
+
+<section class="hero">
+  <h1>مرحبا بك في Dracula Games 🎮</h1>
+  <p>
+    موقع ألعاب بسيط وسريع. جرب أول لعبة الآن مباشرة من المتصفح.
+  </p>
+
+  <button class="play" onclick="startGame()">
+    ▶ ابدأ اللعبة
+  </button>
+</section>
+
+<section class="card">
+
+  <h2>🧛 Dracula Snake</h2>
+  <div class="muted">
+    اجمع القلوب وتجنب الاصطدام!
+  </div>
+
+  <div id="game">
+
+    <div class="stats">
+      <span>النقاط: <b id="score">0</b></span>
+      <span>أفضل: <b id="best">0</b></span>
+    </div>
+
+    <canvas id="canvas" width="360" height="360"></canvas>
+
+    <div class="controls">
+
+      <button class="empty">•</button>
+      <button onclick="move(0,-1)">⬆️</button>
+      <button class="empty">•</button>
+
+      <button onclick="move(-1,0)">⬅️</button>
+      <button onclick="pauseGame()">⏯️</button>
+      <button onclick="move(1,0)">➡️</button>
+
+      <button class="empty">•</button>
+      <button onclick="move(0,1)">⬇️</button>
+      <button class="empty">•</button>
+
+    </div>
+
+    <button class="back" onclick="restart()">
+      🔄 إعادة اللعب
+    </button>
+
+  </div>
+
+</section>
+
+</main>
+
+<footer>
+  DRACULA GAMES © 2026
+</footer>
+
+
+<script>
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let snake;
+let food;
+let direction;
+let nextDirection;
+let score = 0;
+let running = false;
+let paused = false;
+let timer;
+
+let best = Number(localStorage.getItem("draculaBest") || 0);
+
+document.getElementById("best").textContent = best;
+
+
+function startGame(){
+
+  document.getElementById("game").style.display = "block";
+
+  restart();
+
+  setTimeout(function(){
+
+    document.getElementById("game").scrollIntoView({
+      behavior:"smooth"
+    });
+
+  },100);
+}
+
+
+function restart(){
+
+  clearInterval(timer);
+
+  snake = [
+    {x:9,y:9},
+    {x:8,y:9},
+    {x:7,y:9}
+  ];
+
+  direction = {x:1,y:0};
+  nextDirection = {x:1,y:0};
+
+  score = 0;
+  paused = false;
+  running = true;
+
+  document.getElementById("score").textContent = "0";
+
+  placeFood();
+
+  draw();
+
+  timer = setInterval(tick,120);
+}
+
+
+function placeFood(){
+
+  do{
+
+    food = {
+      x:Math.floor(Math.random()*18),
+      y:Math.floor(Math.random()*18)
+    };
+
+  }while(
+    snake.some(function(part){
+      return part.x === food.x && part.y === food.y;
+    })
+  );
+}
+
+
+function move(x,y){
+
+  if(
+    x === -direction.x &&
+    y === -direction.y
+  ){
+    return;
+  }
+
+  nextDirection = {x:x,y:y};
+}
+
+
+function pauseGame(){
+
+  paused = !paused;
+
+}
+
+
+function tick(){
+
+  if(paused || !running){
+    return;
+  }
+
+  direction = nextDirection;
+
+  let head = {
+    x:snake[0].x + direction.x,
+    y:snake[0].y + direction.y
+  };
+
+
+  if(
+    head.x < 0 ||
+    head.x >= 18 ||
+    head.y < 0 ||
+    head.y >= 18 ||
+    snake.some(function(part){
+      return part.x === head.x &&
+             part.y === head.y;
+    })
+  ){
+
+    running = false;
+
+    clearInterval(timer);
+
+    setTimeout(function(){
+
+      alert(
+        "انتهت اللعبة! 🎮\nنقاطك: " + score
+      );
+
+    },50);
+
+    return;
+  }
+
+
+  snake.unshift(head);
+
+
+  if(
+    head.x === food.x &&
+    head.y === food.y
+  ){
+
+    score++;
+
+    if(score > best){
+
+      best = score;
+
+      localStorage.setItem(
+        "draculaBest",
+        best
+      );
+
+      document.getElementById("best").textContent = best;
+    }
+
+    document.getElementById("score").textContent = score;
+
+    placeFood();
+
+  }else{
+
+    snake.pop();
+
+  }
+
+
+  draw();
+}
+
+
+function draw(){
+
+  const size = 20;
+
+  ctx.fillStyle = "#101016";
+
+  ctx.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+
+  for(let x=0;x<18;x++){
+
+    for(let y=0;y<18;y++){
+
+      ctx.fillStyle =
+        (x+y)%2
+        ? "#14141c"
+        : "#111119";
+
+      ctx.fillRect(
+        x*size,
+        y*size,
+        size,
+        size
+      );
+    }
+  }
+
+
+  ctx.font = "18px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  ctx.fillText(
+    "❤️",
+    food.x*size+10,
+    food.y*size+10
+  );
+
+
+  snake.forEach(function(part,index){
+
+    ctx.fillStyle =
+      index === 0
+      ? "#e53935"
+      : "#8b1e25";
+
+    ctx.beginPath();
+
+    ctx.roundRect(
+      part.x*size+2,
+      part.y*size+2,
+      16,
+      16,
+      5
+    );
+
+    ctx.fill();
+
+  });
+
+}
+
+
+document.addEventListener(
+  "keydown",
+  function(event){
+
+    if(event.key === "ArrowUp")
+      move(0,-1);
+
+    if(event.key === "ArrowDown")
+      move(0,1);
+
+    if(event.key === "ArrowLeft")
+      move(-1,0);
+
+    if(event.key === "ArrowRight")
+      move(1,0);
+
+  }
+);
+
+</script>
+
+</body>
+</html>
